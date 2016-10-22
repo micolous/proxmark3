@@ -877,6 +877,7 @@ void SimulateIso14443aTag(int tagType, int flags, byte_t* data) {
 	uint8_t	moebius_n_count = 0;
 	bool gettingMoebius = false;
 	uint8_t	mM = 0; // moebius_modifier for collection storage
+	bool doBufResetNext = false;
 
 	
 	switch (tagType) {
@@ -1173,8 +1174,18 @@ void SimulateIso14443aTag(int tagType, int flags, byte_t* data) {
 
 			// Collect AR/NR per keytype & sector
 			if ( (flags & FLAG_NR_AR_ATTACK) == FLAG_NR_AR_ATTACK ) {
+					if (doBufResetNext) {
+						// Reset, lets try again!
+						Dbprintf("Re-read after previous NR_AR_ATTACK, resetting buffer");
+						memset(ar_nr_resp, 0x00, sizeof(ar_nr_resp));
+						memset(ar_nr_collected, 0x00, sizeof(ar_nr_collected));
+						mM = 0;
+						doBufResetNext = false;
+					}
+
 					for (uint8_t i = 0; i < ATTACK_KEY_COUNT; i++) {
 						if ( ar_nr_collected[i+mM]==0 || ((cardAUTHSC == ar_nr_resp[i+mM].sector) && (cardAUTHKEY == ar_nr_resp[i+mM].keytype) && (ar_nr_collected[i+mM] > 0)) ) {
+
 							// if first auth for sector, or matches sector and keytype of previous auth
 							if (ar_nr_collected[i+mM] < 2) {
 								// if we haven't already collected 2 nonces for this sector
@@ -1216,12 +1227,14 @@ void SimulateIso14443aTag(int tagType, int flags, byte_t* data) {
 										} else {
 											moebius_n_count++;
 											// if we've collected all the nonces we need - finish.
+
 											if (nonce1_count == moebius_n_count) {
 												cmd_send(CMD_ACK,CMD_SIMULATE_MIFARE_CARD,0,0,&ar_nr_resp,sizeof(ar_nr_resp));
 												nonce1_count = 0;
 												nonce2_count = 0;
 												moebius_n_count = 0;
 												gettingMoebius = false;
+												doBufResetNext = true;
 											}
 										}
 									}
