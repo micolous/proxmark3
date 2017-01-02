@@ -68,6 +68,7 @@ typedef struct {
   uint32_t cuid;
   uint8_t  sector;
   uint8_t  keytype;
+  // 16 bits padding here
   uint32_t nonce;
   uint32_t ar;
   uint32_t nr;

@@ -266,3 +266,20 @@ void FormatVersionInformation(char *dst, int len, const char *prefix, void *vers
 	strncat(dst, v->buildtime, len - strlen(dst) - 1);
 	strncat(dst, "\n", len - strlen(dst) - 1);
 }
+
+static uint64_t next_random = 1;
+
+/* Generates a (non-cryptographically secure) 32-bit random number.
+ *
+ * We don't have an implementation of the "rand" function. Instead we use a
+ * method of seeding with the time it took to call "autoseed" from first run.
+ */
+uint32_t prand() {
+	if (next_random == 1) {
+		next_random = GetTickCount();
+	}
+
+	next_random = next_random * 1103515245 + 12345;
+	return (uint32_t)(next_random / 65536) % 0xffffffff;
+}
+

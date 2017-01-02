@@ -980,8 +980,12 @@ void SimulateIso14443aTag(int tagType, int flags, byte_t* data) {
 	// TC(1) = 0x02: CID supported, NAD not supported
 	ComputeCrc14443(CRC_14443_A, response6, 4, &response6[4], &response6[5]);
 
-	// the randon nonce
-	nonce = bytes_to_num(response5, 4);	
+	// the random nonce
+	if ((flags & FLAG_RANDOM_NONCE) == FLAG_RANDOM_NONCE) {
+		nonce = prand();
+	} else {
+		nonce = bytes_to_num(response5, 4);
+	}
 	
 	// Prepare GET_VERSION (different for UL EV-1 / NTAG)
 	// uint8_t response7_EV1[] = {0x00, 0x04, 0x03, 0x01, 0x01, 0x00, 0x0b, 0x03, 0xfd, 0xf7};  //EV1 48bytes VERSION.
@@ -1056,10 +1060,14 @@ void SimulateIso14443aTag(int tagType, int flags, byte_t* data) {
 			DbpString("Button press");
 			break;
 		}
-		
-		// incease nonce at every command recieved
-		nonce++;
-		num_to_bytes(nonce, 4, response5);
+
+		if ((flags & FLAG_RANDOM_NONCE) == FLAG_RANDOM_NONCE) {
+			nonce = prand();
+		} else {
+			// incease nonce at every command recieved
+			nonce++;
+			num_to_bytes(nonce, 4, response5);
+		}
 		
 		p_response = NULL;
 		
@@ -2491,7 +2499,12 @@ void Mifare1ksim(uint8_t flags, uint8_t exitAfterNReads, uint8_t arg2, uint8_t *
 	bool doBufResetNext = false;
 
 	// Authenticate response - nonce
-	uint32_t nonce = bytes_to_num(rAUTH_NT, 4);
+	uint32_t nonce;
+	if ((flags & FLAG_RANDOM_NONCE) == FLAG_RANDOM_NONCE) {		
+		nonce = prand();
+	} else {
+		nonce = bytes_to_num(rAUTH_NT, 4);
+	}
 	
 	// -- Determine the UID
 	// Can be set from emulator memory or incoming data
@@ -2628,7 +2641,11 @@ void Mifare1ksim(uint8_t flags, uint8_t exitAfterNReads, uint8_t arg2, uint8_t *
 			crypto1_destroy(pcs);
 			cardAUTHKEY = 0xff;
 			LEDsoff();
-			nonce++; 
+			if ((flags & FLAG_RANDOM_NONCE) == FLAG_RANDOM_NONCE) {
+				nonce = prand();
+			} else {
+				nonce++;
+			}
 			continue;
 		}
 		

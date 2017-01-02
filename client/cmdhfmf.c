@@ -32,6 +32,7 @@ int usage_hf14_mf1ksim(void){
 	PrintAndLog("      i    (Optional) Interactive, means that console will not be returned until simulation finishes or is aborted");
 	PrintAndLog("      x    (Optional) Crack, performs the 'reader attack', nr/ar attack against a legitimate reader, fishes out the key(s)");
 	PrintAndLog("      e    (Optional) Fill simulator keys from what we crack");
+	PrintAndLog("      r    (Optional) Generate random nonces instead of using sequential nonces.");
 	PrintAndLog("      v    (Optional) Show maths used for cracking reader. Useful for debugging.");
 	PrintAndLog("samples:");
 	PrintAndLog("           hf mf sim u 0a0a0a0a");
@@ -1475,6 +1476,11 @@ int CmdHF14AMf1kSim(const char *Cmd) {
 		case 'N':
 			exitAfterNReads = param_get8(Cmd, cmdp+1);
 			cmdp += 2;
+			break;
+		case 'r':
+		case 'R':
+			flags |= FLAG_RANDOM_NONCE;
+			cmdp++;
 			break;
 		case 'u':
 		case 'U':

@@ -58,4 +58,6 @@ int BUTTON_CLICKED(int ms);
 int BUTTON_HELD(int ms);
 void FormatVersionInformation(char *dst, int len, const char *prefix, void *version_information);
 
+uint32_t prand();
+
 #endif
