@@ -22,6 +22,8 @@
 #include <QtGui>
 
 #include "ui/ui_overlays.h"
+#include "uart.h"
+
 /**
  * @brief The actual plot, black area were we paint the graph
  */
@@ -129,6 +131,7 @@ public:
 private:
 	char *script_cmds_file = NULL;
 	bool usb_present;
+	serial_port *port = NULL;
 };
 
 #endif // PROXGUI_QT

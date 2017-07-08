@@ -14,6 +14,7 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include "data.h"
+#include "comms.h"
 
 // mfCSetBlock work flags
 #define CSETBLOCK_UID 					0x01
@@ -25,16 +26,16 @@
 
 extern char logHexFileName[FILE_PATH_SIZE];
 
-extern int mfDarkside(uint64_t *key);
-extern int mfnested(uint8_t blockNo, uint8_t keyType, uint8_t *key, uint8_t trgBlockNo, uint8_t trgKeyType, uint8_t *ResultKeys, bool calibrate);
-extern int mfCheckKeys (uint8_t blockNo, uint8_t keyType, bool clear_trace, uint8_t keycnt, uint8_t *keyBlock, uint64_t *key);
+extern int mfDarkside(pm3_connection* conn, uint64_t *key);
+extern int mfnested(pm3_connection* conn, uint8_t blockNo, uint8_t keyType, uint8_t *key, uint8_t trgBlockNo, uint8_t trgKeyType, uint8_t *ResultKeys, bool calibrate);
+extern int mfCheckKeys(pm3_connection* conn, uint8_t blockNo, uint8_t keyType, bool clear_trace, uint8_t keycnt, uint8_t *keyBlock, uint64_t *key);
 
-extern int mfEmlGetMem(uint8_t *data, int blockNum, int blocksCount);
-extern int mfEmlSetMem(uint8_t *data, int blockNum, int blocksCount);
+extern int mfEmlGetMem(pm3_connection* conn, uint8_t *data, int blockNum, int blocksCount);
+extern int mfEmlSetMem(pm3_connection* conn, uint8_t *data, int blockNum, int blocksCount);
 
-extern int mfCSetUID(uint8_t *uid, uint8_t *atqa, uint8_t *sak, uint8_t *oldUID, bool wantWipe);
-extern int mfCSetBlock(uint8_t blockNo, uint8_t *data, uint8_t *uid, bool wantWipe, uint8_t params);
-extern int mfCGetBlock(uint8_t blockNo, uint8_t *data, uint8_t params);
+extern int mfCSetUID(pm3_connection* conn, uint8_t *uid, uint8_t *atqa, uint8_t *sak, uint8_t *oldUID, bool wantWipe);
+extern int mfCSetBlock(pm3_connection* conn, uint8_t blockNo, uint8_t *data, uint8_t *uid, bool wantWipe, uint8_t params);
+extern int mfCGetBlock(pm3_connection* conn, uint8_t blockNo, uint8_t *data, uint8_t params);
 
 extern int mfTraceInit(uint8_t *tuid, uint8_t *atqa, uint8_t sak, bool wantSaveToEmlFile);
 extern int mfTraceDecode(uint8_t *data_src, int len, bool wantSaveToEmlFile);
