@@ -55,6 +55,11 @@ void main_loop(char *script_cmds_file, bool usb_present, serial_port* port, bool
 		conn.offline = true;
 	}
 
+#ifdef HAVE_GUI
+	// Setup GUI with reference to our connection struct.
+	MainGraphics(&conn);
+#endif
+
 	FILE *script_file = NULL;
 	char script_cmd_buf[256];  // iceman, needs lua script the same file_path_buffer as the rest
 
@@ -229,9 +234,7 @@ int main(int argc, char* argv[]) {
 	pthread_mutex_init(&print_lock, NULL);
 
 #ifdef HAVE_GUI
-	// TODO: fix this with flush_after_write
-	InitGraphics(argc, argv, script_cmds_file, usb_present, sp);
-	MainGraphics();
+	InitGraphics(argc, argv, script_cmds_file, usb_present, sp, flush_after_write);
 #else
 	main_loop(script_cmds_file, usb_present, sp, flush_after_write);
 #endif	

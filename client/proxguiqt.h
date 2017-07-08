@@ -23,6 +23,9 @@
 
 #include "ui/ui_overlays.h"
 #include "uart.h"
+#include "comms.h"
+
+class ProxGuiQT;
 
 /**
  * @brief The actual plot, black area were we paint the graph
@@ -30,6 +33,7 @@
 class Plot: public QWidget
 {
 private:
+	ProxGuiQT *master;
 	int GraphStart;
 	double GraphPixelsPerPoint;
 	int CursorAPos;
@@ -43,7 +47,7 @@ private:
 	void setMaxAndStart(int *buffer, int len, QRect plotRect);
 	QColor getColor(int graphNum);
 public:
-	Plot(QWidget *parent = 0);
+	Plot(QWidget *parent = 0, ProxGuiQT *master = NULL);
 
 protected:
 	void paintEvent(QPaintEvent *event);
@@ -53,7 +57,6 @@ protected:
 	void keyPressEvent(QKeyEvent *event);
 
 };
-class ProxGuiQT;
 
 /**
  * The window with plot and controls
@@ -100,15 +103,18 @@ class ProxGuiQT : public QObject
 		int argc;
 		char **argv;
 		void (*main_func)(void);
-	
+
 	public:
 		ProxGuiQT(int argc, char **argv);
 		~ProxGuiQT(void);
 		void ShowGraphWindow(void);
 		void RepaintGraphWindow(void);
 		void HideGraphWindow(void);
-		void MainLoop(void);
+		void MainLoop(pm3_connection *conn);
 		void Exit(void);
+		// Shared for ProxWidget
+		pm3_connection *conn;
+
 	private slots:
 		void _ShowGraphWindow(void);
 		void _RepaintGraphWindow(void);
@@ -125,13 +131,14 @@ class ProxGuiQT : public QObject
 class WorkerThread : public QThread {
 	Q_OBJECT;
 public:
-	WorkerThread(char*, bool);
+	WorkerThread(char*, bool, serial_port*, bool);
 	~WorkerThread();
 	void run();
 private:
 	char *script_cmds_file = NULL;
 	bool usb_present;
 	serial_port *port = NULL;
+	bool flush_after_write = false;
 };
 
 #endif // PROXGUI_QT
