@@ -14,7 +14,7 @@
 #include <stdlib.h>  //size_t
 #include <stdint.h>  //uint_32+
 #include <stdbool.h> //bool
-
+#include "comms.h"
 #include "cmdparser.h" // for command_t
 
 command_t * CmdDataCommands();
@@ -68,13 +68,5 @@ void setClockGrid(int clk, int offset);
 int directionalThreshold(const int* in, int *out, size_t len, int8_t up, int8_t down);
 extern int AskEdgeDetect(const int *in, int *out, int len, int threshold);
 //int autoCorr(const int* in, int *out, size_t len, int window);
-
-#define MAX_DEMOD_BUF_LEN (1024*128)
-extern uint8_t DemodBuffer[MAX_DEMOD_BUF_LEN];
-extern size_t DemodBufferLen;
-extern int g_DemodStartIdx;
-extern int g_DemodClock;
-extern uint8_t g_debugMode;
-#define BIGBUF_SIZE 40000
 
 #endif

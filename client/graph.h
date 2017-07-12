@@ -25,18 +25,18 @@ uint8_t fskClocks(uint8_t *fc1, uint8_t *fc2, uint8_t *rf1, bool verbose, int *f
 //uint8_t fskClocks(uint8_t *fc1, uint8_t *fc2, uint8_t *rf1, bool verbose);
 bool graphJustNoise(int *BitStream, int size);
 void setGraphBuf(uint8_t *buff, size_t size);
+#ifdef __cplusplus
+extern "C" {
+#endif
 void save_restoreGB(uint8_t saveOpt);
+#ifdef __cplusplus
+}
+#endif
 
 bool HasGraphData();
 void DetectHighLowInGraph(int *high, int *low, bool addFuzz); 
 
-// Max graph trace len: 40000 (bigbuf) * 8 (at 1 bit per sample)
-#define MAX_GRAPH_TRACE_LEN (40000 * 8 )
 #define GRAPH_SAVE 1
 #define GRAPH_RESTORE 0
-
-extern int GraphBuffer[MAX_GRAPH_TRACE_LEN];
-extern int GraphTraceLen;
-extern int s_Buff[MAX_GRAPH_TRACE_LEN];
 
 #endif

@@ -25,12 +25,6 @@
 #include "loclass/cipherutils.h" // for decimating samples in getsamples
 #include "cmdlfem4x.h"// for em410x demod
 
-uint8_t DemodBuffer[MAX_DEMOD_BUF_LEN];
-uint8_t g_debugMode=0;
-size_t DemodBufferLen=0;
-int g_DemodStartIdx=0;
-int g_DemodClock=0;
-
 static int CmdHelp(const char *Cmd);
 
 //set the demod buffer with given array of binary (one bit per byte)
@@ -65,6 +59,8 @@ bool getDemodBuf(uint8_t *buff, size_t *size) {
 // option '1' to save DemodBuffer any other to restore
 void save_restoreDB(uint8_t saveOpt)
 {
+	// FIXME: This function only allows a buffer of 1 graph to be stored.
+	// FIXME: This function is not thread-safe.
 	static uint8_t SavedDB[MAX_DEMOD_BUF_LEN];
 	static size_t SavedDBlen;
 	static bool DB_Saved = false;

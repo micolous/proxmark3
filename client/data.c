@@ -15,11 +15,10 @@
 #include "proxmark3.h"
 #include "cmdmain.h"
 
-uint8_t* sample_buf;
-
 void GetFromBigBuf(uint8_t *dest, int bytes, int start_index)
 {
   sample_buf = dest;
   UsbCommand c = {CMD_DOWNLOAD_RAW_ADC_SAMPLES_125K, {start_index, bytes, 0}};
   SendCommand(&c);
 }
+

@@ -20,7 +20,7 @@ LDLIBS = -L/opt/local/lib -L/usr/local/lib -lreadline -lpthread -lm
 LUALIB = ../liblua/liblua.a
 LDFLAGS = $(COMMON_FLAGS)
 CFLAGS = -std=c99 -D_ISOC99_SOURCE -I. -I../include -I../common -I../zlib -I../uart -I/opt/local/include -I../liblua -Wall $(COMMON_FLAGS) -g -O3
-CXXFLAGS = -I../include -Wall -O3
+CXXFLAGS = -I../include -I../uart -Wall -O3
 
 LUAPLATFORM = generic
 platform = $(shell uname)
@@ -81,7 +81,9 @@ POSTCOMPILE = $(MV) -f $(OBJDIR)/$*.Td $(OBJDIR)/$*.d
 CORESRCS = 	uart_posix.c \
 			uart_win32.c \
 			util.c \
-			util_posix.c
+			util_posix.c \
+			comms.c \
+			ui.c
 
 CMDSRCS = 	crapto1/crapto1.c\
 			crapto1/crypto1.c\
@@ -102,7 +104,6 @@ CMDSRCS = 	crapto1/crapto1.c\
 			iso15693tools.c \
 			data.c \
 			graph.c \
-			ui.c \
 			cmddata.c \
 			lfdemod.c \
 			cmdhf.c \

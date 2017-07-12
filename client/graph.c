@@ -15,11 +15,7 @@
 #include "graph.h"
 #include "lfdemod.h"
 #include "cmddata.h" //for g_debugmode
-
-int GraphBuffer[MAX_GRAPH_TRACE_LEN];
-int GraphTraceLen;
-
-int s_Buff[MAX_GRAPH_TRACE_LEN];
+#include "comms.h"
 
 /* write a manchester bit to the graph */
 void AppendGraph(int redraw, int clock, int bit)
@@ -52,6 +48,8 @@ int ClearGraph(int redraw)
 // option '1' to save GraphBuffer any other to restore
 void save_restoreGB(uint8_t saveOpt)
 {
+	// FIXME: This function only allows a buffer of 1 graph to be stored.
+	// FIXME: This function is not thread-safe.
 	static int SavedGB[MAX_GRAPH_TRACE_LEN];
 	static int SavedGBlen=0;
 	static bool GB_Saved = false;

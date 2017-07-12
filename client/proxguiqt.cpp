@@ -26,6 +26,8 @@
 #include <string.h>
 #include "proxgui.h"
 #include <QtGui>
+#include "graph.h"
+#include "ui.h"
 //#include <ctime>
 
 bool g_useOverlays = false;
