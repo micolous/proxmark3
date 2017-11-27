@@ -30,6 +30,7 @@ extern pthread_mutex_t print_lock;
 
 static char *logfilename = "proxmark3.log";
 
+#ifndef EXTERNAL_PRINTANDLOG
 void PrintAndLog(char *fmt, ...)
 {
 	char *saved_line;
@@ -97,7 +98,7 @@ void PrintAndLog(char *fmt, ...)
 	//release lock
 	pthread_mutex_unlock(&print_lock);  
 }
-
+#endif
 
 void SetLogFilename(char *fn)
 {
