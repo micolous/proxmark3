@@ -25,7 +25,9 @@
 #include "cmdhf15.h"
 #include "cmdhfepa.h"
 #include "cmdhflegic.h"
+#ifdef WITH_ICLASS
 #include "cmdhficlass.h"
+#endif
 #include "cmdhfmf.h"
 #include "cmdhfmfu.h"
 #include "cmdhftopaz.h"
@@ -668,11 +670,15 @@ int CmdHFSearch(const char *Cmd){
 		PrintAndLog("\nValid ISO14443A Tag Found - Quiting Search\n");
 		return ans;
 	}
+
+#ifdef WITH_ICLASS
 	ans = HFiClassReader("", false, false);
 	if (ans) {
 		PrintAndLog("\nValid iClass Tag (or PicoPass Tag) Found - Quiting Search\n");
 		return ans;
 	}
+#endif
+
 	ans = HF15Reader("", false);
 	if (ans) {
 		PrintAndLog("\nValid ISO15693 Tag Found - Quiting Search\n");
@@ -704,7 +710,9 @@ static command_t CommandTable[] =
 	{"15",		CmdHF15,		1, "{ ISO15693 RFIDs... }"},
 	{"epa",		CmdHFEPA,		1, "{ German Identification Card... }"},
 	{"legic",	CmdHFLegic,		0, "{ LEGIC RFIDs... }"},
+#ifdef WITH_ICLASS
 	{"iclass",	CmdHFiClass,	1, "{ ICLASS RFIDs... }"},
+#endif
 	{"mf",		CmdHFMF,		1, "{ MIFARE RFIDs... }"},
 	{"mfu",		CmdHFMFUltra,	1, "{ MIFARE Ultralight RFIDs... }"},
 	{"topaz",	CmdHFTopaz,		1, "{ TOPAZ (NFC Type 1) RFIDs... }"},

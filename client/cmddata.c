@@ -22,7 +22,11 @@
 #include "cmdparser.h"// already included in cmdmain.h
 #include "usb_cmd.h"  // already included in cmdmain.h and proxmark3.h
 #include "lfdemod.h"  // for demod code
+#ifdef WITH_ICLASS
 #include "loclass/cipherutils.h" // for decimating samples in getsamples
+#else
+#include "bitwise.h"
+#endif
 #include "cmdlfem4x.h"// for em410x demod
 
 uint8_t DemodBuffer[MAX_DEMOD_BUF_LEN];
@@ -1515,6 +1519,7 @@ int CmdZerocrossings(const char *Cmd)
 	return 0;
 }
 
+#ifdef WITH_ICLASS
 int usage_data_bin2hex(){
 		PrintAndLog("Usage: data bin2hex <binary_digits>");
 		PrintAndLog("       This function will ignore all characters not 1 or 0 (but stop reading on whitespace)");
@@ -1564,6 +1569,7 @@ int Cmdbin2hex(const char *Cmd)
 	free(arr);
 	return 0;
 }
+#endif
 
 int usage_data_hex2bin() {
 	PrintAndLog("Usage: data hex2bin <hex_digits>");
@@ -1812,7 +1818,9 @@ static command_t CommandTable[] =
 	{"askedgedetect",   CmdAskEdgeDetect,   1, "[threshold] Adjust Graph for manual ask demod using the length of sample differences to detect the edge of a wave (use 20-45, def:25)"},
 	{"autocorr",        CmdAutoCorr,        1, "[window length] [g] -- Autocorrelation over window - g to save back to GraphBuffer (overwrite)"},
 	{"biphaserawdecode",CmdBiphaseDecodeRaw,1, "[offset] [invert<0|1>] [maxErr] -- Biphase decode bin stream in DemodBuffer (offset = 0|1 bits to shift the decode start)"},
+#ifdef WITH_ICLASS
 	{"bin2hex",         Cmdbin2hex,         1, "bin2hex <digits>     -- Converts binary to hexadecimal"},
+#endif
 	{"bitsamples",      CmdBitsamples,      0, "Get raw samples as bitstring"},
 	{"buffclear",       CmdBuffClear,       1, "Clear sample buffer and graph window"},
 	{"dec",             CmdDec,             1, "Decimate samples"},
