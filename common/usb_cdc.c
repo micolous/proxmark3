@@ -36,6 +36,12 @@
 #include "at91sam7s512.h"
 #include "config_gpio.h"
 
+#define MS_OS_20_SET_HEADER_DESCRIPTOR 0x00
+#define MS_OS_20_SUBSET_HEADER_CONFIGURATION 0x01
+#define MS_OS_20_SUBSET_HEADER_FUNCTION 0x02
+#define MS_OS_20_FEATURE_COMPATIBLE_ID 0x03
+#define MS_OS_20_FEATURE_REG_PROPERTY 0x04
+#define MS_OS_20_DESCRIPTOR_LENGTH 0xd8
 
 #define AT91C_EP_CONTROL     0
 #define AT91C_EP_IN_SIZE  0x40
@@ -43,14 +49,22 @@
 #define AT91C_EP_OUT_SIZE 0x40
 #define AT91C_EP_IN          2
 
+#define STR_LANGUAGE_CODES 0x00
+#define STR_MANUFACTURER   0x01
+#define STR_PRODUCT        0x02
+#define STR_INTASSOC_1     0x03
+#define STR_INTASSOC_2     0x04
+
+
 static const char devDescriptor[] = {
 	/* Device descriptor */
 	0x12,      // bLength
 	0x01,      // bDescriptorType
-	0x00,0x02, // Complies with USB Spec. Release (0200h = release 2.0)
-	0x02,      // bDeviceClass:    CDC class code
-	0x00,      // bDeviceSubclass: CDC class sub code
-	0x00,      // bDeviceProtocol: CDC Device protocol
+	0x10,0x02, // Complies with USB Spec. Release (0210h = release 2.1)
+	           // USB 2.1 is needed to trigger Windows to do USB BOS.
+	0xef,      // bDeviceClass:    Miscellaneous
+	0x02,      // bDeviceSubclass: 
+	0x01,      // bDeviceProtocol: Interface Association Descriptor
 	0x08,      // bMaxPacketSize0
 	0xc4,0x9a, // Vendor ID (0x9ac4 = J. Westhues)
 	0x8f,0x4b, // Product ID (0x4b8f = Proxmark-3 RFID Instrument)
@@ -66,15 +80,15 @@ static const char cfgDescriptor[] = {
 	/* Configuration 1 descriptor */
 	0x09,   // CbLength
 	0x02,   // CbDescriptorType
-	0x43,   // CwTotalLength 2 EP + Control
+	0x5a,   // CwTotalLength 2 EP + Control (was 0x43)
 	0x00,
-	0x02,   // CbNumInterfaces
+	0x03,   // CbNumInterfaces
 	0x01,   // CbConfigurationValue
 	0x00,   // CiConfiguration
-	0xC0,   // CbmAttributes 0xA0
-	0xFA,   // CMaxPower
+	0xB0,   // CbmAttributes 0xA0
+	0x4B,   // CMaxPower
 
-	/* Communication Class Interface Descriptor Requirement */
+	/* Communication Class Interface Descriptor Requirement (0x00) */
 	0x09, // bLength
 	0x04, // bDescriptorType
 	0x00, // bInterfaceNumber
@@ -121,7 +135,7 @@ static const char cfgDescriptor[] = {
 	0x00,
 	0xFF,   // bInterval
 
-	/* Data Class Interface Descriptor Requirement */
+	/* Data Class Interface Descriptor Requirement (0x01) */
 	0x09, // bLength
 	0x04, // bDescriptorType
 	0x01, // bInterfaceNumber
@@ -138,8 +152,8 @@ static const char cfgDescriptor[] = {
 	0x05,   // bDescriptorType
 	0x01,   // bEndpointAddress, Endpoint 01 - OUT
 	0x02,   // bmAttributes      BULK
-	AT91C_EP_OUT_SIZE,   // wMaxPacketSize
-	0x00,
+	0x00,   // wMaxPacketSize "shall be set to 1024 bytes for BULK"
+	0x04,
 	0x00,   // bInterval
 
 	/* Endpoint 2 descriptor */
@@ -147,8 +161,37 @@ static const char cfgDescriptor[] = {
 	0x05,   // bDescriptorType
 	0x82,   // bEndpointAddress, Endpoint 02 - IN
 	0x02,   // bmAttributes      BULK
-	AT91C_EP_IN_SIZE,   // wMaxPacketSize
-	0x00,
+	0x00,   // wMaxPacketSize "shall be set to 1024 bytes for BULK"
+	0x04,
+	0x00,   // bInterval
+	
+	// WebUSB interface (0x02)
+	0x09, // bLength
+	0x04, // bDescriptorType
+	0x02, // bInterfaceNumber
+	0x00, // bAlternateSetting
+	0x02, // bNumEndpoints
+	0xff, // bInterfaceClass
+	0x00, // bInterfaceSubclass
+	0x00, // bInterfaceProtocol
+	0x00, // iInterface
+
+	// Endpoint 1 descriptor
+	0x07,   // bLength
+	0x05,   // bDescriptorType
+	0x01,   // bEndpointAddress, Endpoint 01 - OUT
+	0x02,   // bmAttributes      BULK
+	0x00,   // wMaxPacketSize "shall be set to 1024 bytes for BULK"
+	0x04,
+	0x00,   // bInterval
+
+	// Endpoint 2 descriptor
+	0x07,   // bLength
+	0x05,   // bDescriptorType
+	0x82,   // bEndpointAddress, Endpoint 02 - IN
+	0x02,   // bmAttributes      BULK
+	0x00,   // wMaxPacketSize "shall be set to 1024 bytes for BULK"
+	0x04,
 	0x00    // bInterval
 };
 
@@ -182,20 +225,139 @@ static const char StrDescProduct[] = {
   'M', 0x00,
   '3', 0x00
 };
-	
-static const char* const pStrings[] =
-{
-    StrDescLanguageCodes,
-    StrDescManufacturer,
-	StrDescProduct
-};
+
 
 const char* getStringDescriptor(uint8_t idx)
 {
-    if(idx >= (sizeof(pStrings) / sizeof(pStrings[0]))) {
-        return(NULL);
-	} else {
-		return(pStrings[idx]);
+	switch (idx) {
+		case STR_LANGUAGE_CODES:
+			return StrDescLanguageCodes;
+		case STR_MANUFACTURER:
+			return StrDescManufacturer;
+		case STR_PRODUCT:
+			return StrDescProduct;
+		default:
+			return NULL;
+	}
+}
+
+// WebUSB / WINUSB
+// Adapted from:
+// https://github.com/webusb/arduino/blob/gh-pages/library/WebUSB/WebUSB.cpp
+
+static const char bosDescriptor[] = {
+0x05,  // Length
+0x0F,  // Binary Object Store descriptor
+0x39, 0x00,  // Total length
+0x02,  // Number of device capabilities
+
+// WebUSB Platform Capability descriptor (bVendorCode == 0x01).
+0x18,  // Length
+0x10,  // Device Capability descriptor
+0x05,  // Platform Capability descriptor
+0x00,  // Reserved
+0x38, 0xB6, 0x08, 0x34, 0xA9, 0x09, 0xA0, 0x47,
+0x8B, 0xFD, 0xA0, 0x76, 0x88, 0x15, 0xB6, 0x65,  // WebUSB GUID
+0x00, 0x01,  // Version 1.0
+0x01,  // Vendor request code
+0x01,  // Landing page
+
+// Microsoft OS 2.0 Platform Capability Descriptor (MS_VendorCode == 0x02)
+0x1C,  // Length
+0x10,  // Device Capability descriptor
+0x05,  // Platform Capability descriptor
+0x00,  // Reserved
+0xDF, 0x60, 0xDD, 0xD8, 0x89, 0x45, 0xC7, 0x4C,
+0x9C, 0xD2, 0x65, 0x9D, 0x9E, 0x64, 0x8A, 0x9F,  // MS OS 2.0 GUID
+0x00, 0x00, 0x03, 0x06,  // Windows version
+MS_OS_20_DESCRIPTOR_LENGTH, 0x00,  // Descriptor set length
+0x02,  // Vendor request code
+0x00   // Alternate enumeration code
+};
+
+static const char msos2Descriptor[] = {
+// Spec: http://download.microsoft.com/download/3/5/6/3563ED4A-F318-4B66-A181-AB1D8F6FD42D/MS_OS_2_0_desc.docx
+// Microsoft OS 2.0 descriptor set header (table 10)
+// This is needed to make Windows handle composite devices properly.
+// Useful info: http://goo.gl/ZDmsnt
+
+0x0A, 0x00,  // Descriptor size (10 bytes)
+MS_OS_20_SET_HEADER_DESCRIPTOR, 0x00,  // MS OS 2.0 descriptor set header
+0x00, 0x00, 0x03, 0x06,  // Windows version (8.1) (0x06030000)
+MS_OS_20_DESCRIPTOR_LENGTH, 0x00,  // Size, MS OS 2.0 descriptor set
+
+// Microsoft OS 2.0 registry property descriptor (Table 14)
+// This registry key is created at:
+// HKLM\SYSTEM\CurrentControlSet\Enum\USB\VID_9AC4&PID_4B8F\...\Device Parameters
+0x26, 0x00,   // wLength
+MS_OS_20_FEATURE_REG_PROPERTY, 0x00,
+0x01, 0x00,   // wPropertyDataType: REG_SZ
+0x14, 0x00,   // wPropertyNameLength
+
+'p', 0x00, 'r', 0x00, 'o', 0x00, 'x', 0x00, 'm', 0x00, 'a', 0x00, 'r', 0x00,
+'k', 0x00, '3', 0x00, 0x00, 0x00,
+
+0x08, 0x00,   // wPropertyDataLength
+'P', 0x00, 'M', 0x00, '3', 0x00, 0x00, 0x00,
+
+
+// Microsoft OS 2.0 configuration subset header
+0x08, 0x00,  // Descriptor size (8 bytes)
+ MS_OS_20_SUBSET_HEADER_CONFIGURATION, 0x00,  // MS OS 2.0 configuration subset header
+0x00,        // bConfigurationValue
+0x00,        // Reserved
+0xA8, 0x00,  // Size, MS OS 2.0 configuration subset
+
+// Microsoft OS 2.0 function subset header
+0x08, 0x00,  // Descriptor size (8 bytes)
+ MS_OS_20_SUBSET_HEADER_FUNCTION, 0x00,  // MS OS 2.0 function subset header
+0x00, // First interface number for WebUSB (1 byte) sent here.
+0x00,        // Reserved
+0xA0, 0x00,  // Size, MS OS 2.0 function subset
+
+
+// Microsoft OS 2.0 compatible ID descriptor (table 13)
+0x14, 0x00,  // wLength
+MS_OS_20_FEATURE_COMPATIBLE_ID, 0x00,  // MS_OS_20_FEATURE_COMPATIBLE_ID
+'W',  'I',  'N',  'U',  'S',  'B',  0x00, 0x00,
+0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+
+
+// Custom Property
+// This is needed so that Windows will properly enumerate the composite device.
+0x84, 0x00,   //wLength: 
+MS_OS_20_FEATURE_REG_PROPERTY, 0x00,   // wDescriptorType: MS_OS_20_FEATURE_REG_PROPERTY: 0x04 (Table 9)
+0x07, 0x00,   //wPropertyDataType: REG_MULTI_SZ (Table 15)
+0x2a, 0x00,   //wPropertyNameLength: 
+//bPropertyName: “DeviceInterfaceGUID”
+'D', 0x00, 'e', 0x00, 'v', 0x00, 'i', 0x00, 'c', 0x00, 'e', 0x00, 'I', 0x00, 'n', 0x00, 't', 0x00, 'e', 0x00, 
+'r', 0x00, 'f', 0x00, 'a', 0x00, 'c', 0x00, 'e', 0x00, 'G', 0x00, 'U', 0x00, 'I', 0x00, 'D', 0x00, 's', 0x00, 
+0x00, 0x00,
+0x50, 0x00,   // wPropertyDataLength
+//bPropertyData: "{43222fae-0732-4f6c-acb6-cb91f222a77c}"
+'{', 0x00, '4', 0x00, '3', 0x00, '2', 0x00, '2', 0x00, '2', 0x00, 'F', 0x00, 'A', 0x00, 'E', 0x00, '-', 0x00,
+'0', 0x00, '7', 0x00, '3', 0x00, '2', 0x00, '-', 0x00, '4', 0x00, 'F', 0x00, '6', 0x00, 'C', 0x00, '-', 0x00,
+'A', 0x00, 'C', 0x00, 'B', 0x00, '6', 0x00, '-', 0x00, 'C', 0x00, 'B', 0x00, '9', 0x00, '1', 0x00, 'F', 0x00,
+'2', 0x00, '2', 0x00, '2', 0x00, 'A', 0x00, '7', 0x00, '7', 0x00, 'C', 0x00, '}', 0x00,
+0x00, 0x00, 0x00, 0x00
+};
+
+static const char demoWebUsbUrl[] = {
+	3 + 28, // length
+	0x03, // WEBUSB_URL
+	0x00, // Scheme (0x00: http, 0x01: https)
+	0x6c, 0x6f, 0x63, 0x61, 0x6c, 0x68, 0x6f, 0x73, 0x74, 0x3a, 0x38, 0x30,
+	0x30, 0x30, 0x2f, 0x70, 0x72, 0x6f, 0x78, 0x6d, 0x61, 0x72, 0x6b, 0x2e,
+	0x68, 0x74, 0x6d, 0x6c	// "localhost:8000/proxmark.html"
+};
+
+const char* getWebUsbUrl(uint8_t idx)
+{
+	switch (idx) {
+		case 0x01:
+			return demoWebUsbUrl;
+		default:
+			return NULL;
 	}
 }
 
@@ -248,6 +410,13 @@ const char* getStringDescriptor(uint8_t idx)
 #define GET_LINE_CODING               0x21A1
 #define SET_LINE_CODING               0x2021
 #define SET_CONTROL_LINE_STATE        0x2221
+
+/* Vendor-specific control requests */
+#define VEN_CTRL_WEBUSB               0x01C0
+#define WEBUSB_REQUEST_GET_URL        0x02
+#define VEN_CTRL_MS_OS_20             0x02C0
+#define MS_OS_20_REQUEST_DESCRIPTOR   0x07
+
 
 typedef struct {
 	unsigned int dwDTERRate;
@@ -504,7 +673,7 @@ void AT91F_USB_SendStall(AT91PS_UDP pUdp) {
 //* \brief This function is a callback invoked when a SETUP packet is received
 //*----------------------------------------------------------------------------
 void AT91F_CDC_Enumerate() {
-	byte_t bmRequestType, bRequest;
+	byte_t bmRequestType, bRequest, bHighValue, bLowValue;
 	uint16_t wValue, wIndex, wLength, wStatus;
 
 	if ( !(pUdp->UDP_CSR[AT91C_EP_CONTROL] & AT91C_UDP_RXSETUP) )
@@ -512,8 +681,12 @@ void AT91F_CDC_Enumerate() {
 
 	bmRequestType = pUdp->UDP_FDR[0];
 	bRequest      = pUdp->UDP_FDR[0];
-	wValue        = (pUdp->UDP_FDR[0] & 0xFF);
-	wValue       |= (pUdp->UDP_FDR[0] << 8);
+
+	bLowValue     = pUdp->UDP_FDR[0];
+	bHighValue    = pUdp->UDP_FDR[0];
+	wValue        = (bLowValue & 0xFF);
+	wValue       |= (bHighValue << 8);
+	
 	wIndex        = (pUdp->UDP_FDR[0] & 0xFF);
 	wIndex       |= (pUdp->UDP_FDR[0] << 8);
 	wLength       = (pUdp->UDP_FDR[0] & 0xFF);
@@ -529,20 +702,37 @@ void AT91F_CDC_Enumerate() {
 	// Handle supported standard device request Cf Table 9-3 in USB specification Rev 1.1
 	switch ((bRequest << 8) | bmRequestType) {
 	case STD_GET_DESCRIPTOR:
-		if (wValue == 0x100)       // Return Device Descriptor
+		switch (bHighValue) {
+		case 0x01: // Return Device Descriptor
 			AT91F_USB_SendData(pUdp, devDescriptor, MIN(sizeof(devDescriptor), wLength));
-		else if (wValue == 0x200)  // Return Configuration Descriptor
+			break;
+		case 0x02: // Return Configuration Descriptor
 			AT91F_USB_SendData(pUdp, cfgDescriptor, MIN(sizeof(cfgDescriptor), wLength));
-		else if ((wValue & 0xF00) == 0x300) { // Return String Descriptor
-			const char *strDescriptor = getStringDescriptor(wValue & 0xff);
+			break;
+		case 0x03: // Return String Descriptor
+		{
+			const char *strDescriptor = getStringDescriptor(bLowValue);
 			if (strDescriptor != NULL) {
 				AT91F_USB_SendData(pUdp, strDescriptor, MIN(strDescriptor[0], wLength));
 			} else {
 				AT91F_USB_SendStall(pUdp);
 			}
+			break;
 		}
-		else
+		case 0x0F: // Return Binary Object Store (BOS)
+		{
+			if (bLowValue == 0 && wIndex == 0) {
+				AT91F_USB_SendData(pUdp, bosDescriptor, MIN(sizeof(bosDescriptor), wLength));
+			} else {
+				AT91F_USB_SendStall(pUdp);
+			}
+				
+			break;
+		}
+		default:
 			AT91F_USB_SendStall(pUdp);
+			break;
+		}
 		break;
 	case STD_SET_ADDRESS:
 		AT91F_USB_SendZlp(pUdp);
@@ -630,6 +820,27 @@ void AT91F_CDC_Enumerate() {
 	case SET_CONTROL_LINE_STATE:
 		btConnection = wValue;
 		AT91F_USB_SendZlp(pUdp);
+		break;
+	
+	// Handle vendor-specific requests
+	case VEN_CTRL_WEBUSB:
+		if (wIndex == WEBUSB_REQUEST_GET_URL) {
+			const char *url = getWebUsbUrl(bLowValue);
+			if (url != NULL) {
+				AT91F_USB_SendData(pUdp, url, MIN(url[0], wLength));
+			} else {
+				AT91F_USB_SendStall(pUdp);
+			}
+		} else {
+			AT91F_USB_SendStall(pUdp);
+		}		
+		break;
+	case VEN_CTRL_MS_OS_20:
+		if (wIndex == MS_OS_20_REQUEST_DESCRIPTOR) {
+			AT91F_USB_SendData(pUdp, msos2Descriptor, MIN(sizeof(msos2Descriptor), wLength));
+		} else {
+			AT91F_USB_SendStall(pUdp);
+		}			
 		break;
 	default:
 		AT91F_USB_SendStall(pUdp);
