@@ -49,12 +49,15 @@
 #define AT91C_EP_OUT_SIZE 0x40
 #define AT91C_EP_IN          2
 
-#define STR_LANGUAGE_CODES 0x00
-#define STR_MANUFACTURER   0x01
-#define STR_PRODUCT        0x02
-#define STR_INTASSOC_1     0x03
-#define STR_INTASSOC_2     0x04
+#define STR_LANGUAGE_CODES  0x00
+#define STR_MANUFACTURER    0x01
+#define STR_PRODUCT         0x02
+#define STR_SERIAL          0x03
+#define STR_INTASSOC_CDC    0x04
+#define STR_INTASSOC_WEBUSB 0x05
 
+#define USB_TYPE_STRING    0x03
+#define USB_TYPE_INTASSOC  0x0B
 
 static const char devDescriptor[] = {
 	/* Device descriptor */
@@ -68,10 +71,10 @@ static const char devDescriptor[] = {
 	0x08,      // bMaxPacketSize0
 	0xc4,0x9a, // Vendor ID (0x9ac4 = J. Westhues)
 	0x8f,0x4b, // Product ID (0x4b8f = Proxmark-3 RFID Instrument)
-	0x01,0x00, // Device release number (0001)
+	0x02,0x00, // Device release number (0002)
 	0x01,      // iManufacturer
 	0x02,      // iProduct
-	0x00,      // iSerialNumber
+	0x03,      // iSerialNumber
 	0x01       // bNumConfigs
 };
 
@@ -80,13 +83,23 @@ static const char cfgDescriptor[] = {
 	/* Configuration 1 descriptor */
 	0x09,   // CbLength
 	0x02,   // CbDescriptorType
-	0x5a,   // CwTotalLength 2 EP + Control (was 0x43)
+	0x6a,   // CwTotalLength 2 EP + Control (was 0x43)
 	0x00,
 	0x03,   // CbNumInterfaces
 	0x01,   // CbConfigurationValue
 	0x00,   // CiConfiguration
 	0xB0,   // CbmAttributes 0xA0
 	0x4B,   // CMaxPower
+
+	// USB Descriptor Interface Association (CDC)
+	0x08,
+	USB_TYPE_INTASSOC,
+	0x00,   // bFirstInterface
+	0x02,   // bInterfaceCount
+	0x02,   // bFunctionClass: Communication Device Class
+	0x00,   // bFunctionSubclass: (unused)
+	0x00,   // bFunctionProtocol: (unused)
+	STR_INTASSOC_CDC, // iFunction: String descriptor
 
 	/* Communication Class Interface Descriptor Requirement (0x00) */
 	0x09, // bLength
@@ -97,7 +110,7 @@ static const char cfgDescriptor[] = {
 	0x02, // bInterfaceClass
 	0x02, // bInterfaceSubclass
 	0x01, // bInterfaceProtocol
-	0x00, // iInterface
+	STR_INTASSOC_CDC, // iInterface
 
 	/* Header Functional Descriptor */
 	0x05, // bFunction Length
@@ -144,7 +157,7 @@ static const char cfgDescriptor[] = {
 	0x0A, // bInterfaceClass
 	0x00, // bInterfaceSubclass
 	0x00, // bInterfaceProtocol
-	0x00, // iInterface
+	STR_INTASSOC_CDC, // iInterface
 
 	/* First alternate setting */
 	/* Endpoint 1 descriptor */
@@ -165,6 +178,16 @@ static const char cfgDescriptor[] = {
 	0x04,
 	0x00,   // bInterval
 	
+	// USB Descriptor Interface Association (WebUSB)
+	0x08,
+	USB_TYPE_INTASSOC,
+	0x02,   // bFirstInterface
+	0x01,   // bInterfaceCount
+	0xFF,   // bFunctionClass: Vendor specific
+	0x00,   // bFunctionSubclass: (unused)
+	0x00,   // bFunctionProtocol: (unused)
+	STR_INTASSOC_WEBUSB, // iFunction: String descriptor
+	
 	// WebUSB interface (0x02)
 	0x09, // bLength
 	0x04, // bDescriptorType
@@ -174,7 +197,7 @@ static const char cfgDescriptor[] = {
 	0xff, // bInterfaceClass
 	0x00, // bInterfaceSubclass
 	0x00, // bInterfaceProtocol
-	0x00, // iInterface
+	STR_INTASSOC_WEBUSB, // iInterface
 
 	// Endpoint 1 descriptor
 	0x07,   // bLength
@@ -197,13 +220,13 @@ static const char cfgDescriptor[] = {
 
 static const char StrDescLanguageCodes[] = {
   4,			// Length
-  0x03,			// Type is string
+  USB_TYPE_STRING,
   0x09, 0x04	// supported language Code 0 = 0x0409 (English)
 };
 	
 static const char StrDescManufacturer[] = {
   26,			// Length
-  0x03,			// Type is string
+  USB_TYPE_STRING,
   'p', 0x00,
   'r', 0x00,
   'o', 0x00,
@@ -220,12 +243,78 @@ static const char StrDescManufacturer[] = {
 
 static const char StrDescProduct[] = {
   8,			// Length
-  0x03,			// Type is string
+  USB_TYPE_STRING,
   'P', 0x00,
   'M', 0x00,
   '3', 0x00
 };
 
+static const char StrDescSerial[] = {
+  26,			// Length
+  USB_TYPE_STRING,
+  'p', 0x00,
+  'm', 0x00,
+  '3', 0x00,
+  '.', 0x00,
+  '0', 0x00,
+  '-', 0x00,
+  'w', 0x00,
+  'e', 0x00,
+  'b', 0x00,
+  'u', 0x00,
+  's', 0x00,
+  'b', 0x00
+};
+
+static const char StrIntAssocCdc[] = {
+  50, // Length
+  USB_TYPE_STRING,
+  'p', 0x00,
+  'r', 0x00,
+  'o', 0x00,
+  'x', 0x00,
+  'm', 0x00,
+  'a', 0x00,
+  'r', 0x00,
+  'k', 0x00,
+  '3', 0x00,
+  ' ', 0x00,
+  's', 0x00,
+  'e', 0x00,
+  'r', 0x00,
+  'i', 0x00,
+  'a', 0x00,
+  'l', 0x00,
+  ' ', 0x00,
+  'c', 0x00,
+  'd', 0x00,
+  'c', 0x00,
+  '_', 0x00,
+  'a', 0x00,
+  'c', 0x00,
+  'm', 0x00
+};
+
+static const char StrIntAssocWebUSB[] = {
+  34, // Length
+  USB_TYPE_STRING,
+  'p', 0x00,
+  'r', 0x00,
+  'o', 0x00,
+  'x', 0x00,
+  'm', 0x00,
+  'a', 0x00,
+  'r', 0x00,
+  'k', 0x00,
+  '3', 0x00,
+  ' ', 0x00,
+  'W', 0x00,
+  'e', 0x00,
+  'b', 0x00,
+  'U', 0x00,
+  'S', 0x00,
+  'B', 0x00
+};
 
 const char* getStringDescriptor(uint8_t idx)
 {
@@ -236,6 +325,12 @@ const char* getStringDescriptor(uint8_t idx)
 			return StrDescManufacturer;
 		case STR_PRODUCT:
 			return StrDescProduct;
+		case STR_SERIAL:
+			return StrDescSerial;
+		case STR_INTASSOC_CDC:
+			return StrIntAssocCdc;
+		case STR_INTASSOC_WEBUSB:
+			return StrIntAssocWebUSB;
 		default:
 			return NULL;
 	}
@@ -288,7 +383,7 @@ MS_OS_20_DESCRIPTOR_LENGTH, 0x00,  // Size, MS OS 2.0 descriptor set
 
 // Microsoft OS 2.0 registry property descriptor (Table 14)
 // This registry key is created at:
-// HKLM\SYSTEM\CurrentControlSet\Enum\USB\VID_9AC4&PID_4B8F\...\Device Parameters
+// HKLM\SYSTEM\CurrentControlSet\Control\UsbFlags\vvvvpppprrrrr
 0x26, 0x00,   // wLength
 MS_OS_20_FEATURE_REG_PROPERTY, 0x00,
 0x01, 0x00,   // wPropertyDataType: REG_SZ
@@ -311,7 +406,7 @@ MS_OS_20_FEATURE_REG_PROPERTY, 0x00,
 // Microsoft OS 2.0 function subset header
 0x08, 0x00,  // Descriptor size (8 bytes)
  MS_OS_20_SUBSET_HEADER_FUNCTION, 0x00,  // MS OS 2.0 function subset header
-0x00, // First interface number for WebUSB (1 byte) sent here.
+0x02,        // First interface number for WebUSB (1 byte) sent here.
 0x00,        // Reserved
 0xA0, 0x00,  // Size, MS OS 2.0 function subset
 
