@@ -83,7 +83,7 @@ static const char cfgDescriptor[] = {
 	/* Configuration 1 descriptor */
 	0x09,   // CbLength
 	0x02,   // CbDescriptorType
-	0x6a,   // CwTotalLength 2 EP + Control (was 0x43)
+	0x62,   // CwTotalLength 2 EP + Control (was 0x43)
 	0x00,
 	0x03,   // CbNumInterfaces
 	0x01,   // CbConfigurationValue
@@ -179,7 +179,7 @@ static const char cfgDescriptor[] = {
 	0x00,   // bInterval
 	
 	// USB Descriptor Interface Association (WebUSB)
-	0x08,
+/*	0x08,
 	USB_TYPE_INTASSOC,
 	0x02,   // bFirstInterface
 	0x01,   // bInterfaceCount
@@ -187,7 +187,8 @@ static const char cfgDescriptor[] = {
 	0x00,   // bFunctionSubclass: (unused)
 	0x00,   // bFunctionProtocol: (unused)
 	STR_INTASSOC_WEBUSB, // iFunction: String descriptor
-	
+	*/
+
 	// WebUSB interface (0x02)
 	0x09, // bLength
 	0x04, // bDescriptorType
@@ -412,11 +413,11 @@ MS_OS_20_FEATURE_REG_PROPERTY, 0x00,
 
 
 // Microsoft OS 2.0 compatible ID descriptor (table 13)
+// WINUSB: Tells Windows to expose the interfaces to userspace.
 0x14, 0x00,  // wLength
 MS_OS_20_FEATURE_COMPATIBLE_ID, 0x00,  // MS_OS_20_FEATURE_COMPATIBLE_ID
 'W',  'I',  'N',  'U',  'S',  'B',  0x00, 0x00,
 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-
 
 // Custom Property
 // This is needed so that Windows will properly enumerate the composite device.
